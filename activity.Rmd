@@ -1,0 +1,292 @@
+---
+title: "Introduction to extreme value analysis in R"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+In September 2013, Boulder Creek experienced massive flooding following a prolonged bout of precipitation. 
+Over a five day period, a storm dumped more precipitation in Boulder county than what is expected over the course of a typical year. 
+
+![This is an animated loop of water vapor systems over the western area of North America on September 12th, 2013 as shown by the GOES-15 and GOES-13 satellites. The storm that caused the 2013 Colorado flooding was kept in a confined area over the Eastern Range of the Rocky Mountains in Colorado by these water vapor systems. Source: http://cimss.ssec.wisc.edu/goes/blog/archives/13876](https://upload.wikimedia.org/wikipedia/commons/9/97/North_American_Water_Vapor_Systems.gif)
+
+# What is a 100 year flood?
+
+The media reported the event as a 1,000 year rain and a 100 year flood. 
+But, what do these values actually mean, and where did they come from?
+
+The goals of this excercise are to: 
+
+1. Dive into the notion of **exceedance probabilities** and **return intervals**
+2. Provide some hands-on experience with extreme value analysis in R
+3. Estimate return intervals for the 2013 floods
+
+### Loading packages
+
+We are going to use some R packages to help us acquire, process, and model
+the flood data. 
+If these aren't already installed, you may install them with the 
+`install.packages` function (e.g., `install.packages('leaflet')`).
+
+```{r, message=FALSE}
+library(dataRetrieval)
+library(tidyverse)
+library(lubridate)
+library(leaflet)
+library(extRemes)
+library(plotly)
+```
+
+## Acquiring flood data
+
+We are going to use the `dataRetrieval` R package to get some stream discharge
+data 
+This package is maintained by USGS and openly available on 
+[GitHub](https://github.com/USGS-R/dataRetrieval) to the research community.
+
+The USGS has stream gauges in and around Boulder, identified by site numbers. 
+Here are some of them:
+
+- 06730500
+- 06730200
+- 06729500
+
+We can use the `whatNWISsites` function to get metadata on each of these sites:
+
+```{r}
+usgs_sites <- c('06730500', 
+                '06730200', 
+                '06729500')
+site_info <- whatNWISsites(sites = usgs_sites)
+site_info
+```
+
+Let's visualize the locations of these stream gauges to provide some context:
+
+```{r}
+leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng = site_info$dec_long_va, 
+             lat = site_info$dec_lat_va, 
+             popup = paste(site_info$site_no, 
+                           site_info$station_nm))
+```
+
+Now, we can use the `readNWISdata` function to fetch stream discharge data at 
+these locations. This function may take a couple of minutes while to run. 
+
+```{r}
+discharge_data <- readNWISdata(siteNumbers = usgs_sites, 
+                               parameterCd = '00060', # cubic ft. / sec
+                               startDate = '1870-10-01',
+                               endDate = '2018-01-01')
+```
+
+## Data cleaning
+
+The data are in kind of a raw form - let's clean them up with an eye toward 
+working with annual maxima. 
+We are going to:
+
+1. Rename columns to be more human readable
+2. Create `year` and `DOY` (day of year) columns from the date field
+3. Filter out suspect observations
+4. Convert the `data.frame` to a `tibble`, which is easier to work with
+
+```{r}
+discharge_data <- discharge_data  %>%
+  rename(quality_code = X_00060_00003_cd, 
+         discharge_cfs = X_00060_00003) %>%
+  mutate(year = year(dateTime)) %>%
+  filter(quality_code == 'A') %>%
+  as_tibble
+```
+
+Let's take a peek and see what the data look like: 
+
+```{r}
+glimpse(discharge_data)
+```
+
+What do these discharge time series look like?
+
+```{r}
+discharge_data %>%
+  ggplot(aes(dateTime, discharge_cfs, group = year)) + 
+  geom_point(size = .1) + 
+  facet_wrap(~ site_no, ncol = 1) + 
+  xlab('Date') + 
+  ylab('Discharge (CFS)')
+```
+
+Uh oh - looks like some of the data are missing! 
+Wasn't this supposed to be an in-class activity? 
+We are all adults here, and real data are messy.
+
+Only two of the stations were operational during the flood: `06730500` and `06730200`. 
+Which of these do you think will be most useful for computing annual return intervals? 
+
+Here, I'll use station USGS-06730500, because it has a longer record than any 
+other site, and contains data from the flood. 
+This station is at the mouth of Boulder Creek, so I'll give it an informative 
+name:
+
+```{r}
+boulder_creek_mouth <- discharge_data %>%
+  filter(site_no == '06730500')
+```
+
+## Computing annual maxima
+
+So, we know that we want to model annual maxima - but first we need to compute 
+them. 
+We can do this in two steps, first grouping by year, and second summarizing 
+each year by its maximum. 
+
+```{r}
+annual_maxima <- boulder_creek_mouth %>%
+  group_by(year) %>%
+  summarize(max_cfs = max(discharge_cfs))
+```
+
+Below, generate a plot of maximum discharge at this site through time:
+
+```{r}
+# your code here
+```
+
+Is there anything that strikes you as unusual about this plot?
+
+## Back to the question at hand
+
+Clearly, the maximum flow in 2013 was quite a bit higher than anything seen 
+previously in this record. 
+The challenge now is to come up with an estimate for the return interval.
+A **return interval** is a simple idea with a complex formal definition. 
+Simply put, if you expect to see discharge of a certain value once every 10 
+years, then the return interval for that level of discharge is 10 years. 
+More formally, it is the inverse of the probability that an event with be 
+exceeded in any one year. 
+So, if the probability of exceeding a particular value in one year is 0.1, the
+return interval is the inverse of 0.1 (1 / 0.1 = 10).
+Return intervals are also called return periods, recurrence intervals, and 
+repeat intervals. 
+
+### How to find return intervals
+
+#### A naiive approach
+
+What if we used the empirical data alone to estimate a return interval? 
+All we need is some probability of exceeding a value in one year, right?
+Once we have that probability, we just have to compute its inverse.
+How hard could it be?
+
+Let's ask the question: what's the return interval for discharge exceeding
+1000 cubic feet per second?
+
+First, we compute some estimate of the probability of exceeding 1000 cfs in a 
+year. 
+We could do this empirically by asking what fraction of years have maxima 
+that exceed 1500 cfs:
+
+```{r}
+exceedance_fraction <- mean(annual_maxima$max_cfs > 1500)
+exceedance_fraction
+```
+
+So, our estimated **exceedance probability** is 
+`r exceedance_fraction`.
+To transform this into a **return interval** we take the inverse:
+
+```{r}
+return_interval <- 1 / exceedance_fraction
+return_interval
+```
+
+So, we might say that the return interval for 1500 cfs 
+is $\approx$ `r return_interval`.
+
+Now, find the return interval for 4000 cfs using the same approach:
+
+```{r}
+# your code here
+```
+
+#### A model-based approach
+
+It turns out that we can improve our approch by applying some results from 
+extreme value theory. 
+Specifically, we expect that these annual maxima might be well-represented by 
+a specific probability distribution: the Generalize Extreme Value (GEV) 
+distribution. 
+
+The GEV distribution has three parameters:
+
+- location ($\mu$)
+- scale ($\sigma > 0$)
+- shape $\xi$
+
+The cumulative probability density function (CDF) is given by:
+
+$$F(x; \mu, \sigma, \xi) = \begin{cases}\exp(-(1+\xi (x-\mu)/\sigma)^{-1/\xi}) & \xi\neq0 \\ \exp(-\exp(-(x-\mu)/\sigma)) & \xi = 0\end{cases}$$
+
+#### Wait, what's a CDF and what are all of those squiggly lines?
+
+A cumulative probability density function gives the probability that a random 
+variable is less than or equal to some value $x$. 
+The notation $F(x; \mu, \sigma, \xi)$ represents the CDF of a 
+distribution $F$, that has three parameters ($\mu, \sigma, \xi$). 
+So you can read $F(x; \mu, \sigma, \xi)$ as the probability of a value 
+less than or equal to $x$ for the distribution $F$, parameterized by all of the 
+things after the colon.
+The squiggly lines are just compact representations of the english words
+'location', 'scale', and 'shape' (designed for backwards compatibility with 
+ancient greek time travelers and optimal student confusion).
+
+In order to use the GEV distribution, we need to estimate these three 
+parameters: $\mu, \sigma, \xi$.
+
+### Parameter estimation for the GEV distribution
+
+We are going to use the `extRemes` package for parameter estimation. 
+There are a lot of packages in R that can fit extreme value models, this is 
+one of the more well-documented ones. 
+For an overview of other options, check out the 
+[CRAN task view page for extreme value analysis](https://cran.r-project.org/web/views/ExtremeValue.html)
+
+The `extRemes` package has a function `fevd` to fit an extreme value 
+distribution to data. 
+There are three arguments that we'll need to specify: 
+
+- `x`: a numeric vector of annual maxima
+- `type`: the type of distribution (we need `type = 'GEV`)
+
+Below, we use the `fevd` function to fit your model. 
+
+```{r}
+model <- fevd(x = annual_maxima$max_cfs, type = 'GEV')
+```
+
+
+*Hint*
+
+- Check out `?fevd` to see the functions help file
+
+
+Once your model fits successfully, you can see a summary of the output by 
+printing themodel object.
+
+```{r}
+model
+```
+
+#### Computing return intervals with our model
+
+
+### Challenges
+
+#### Integrate the data from the other sites to improve your estimate
+
+
+#### Assume it's 2012 and compute the same return interval
+
