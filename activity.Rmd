@@ -1,7 +1,7 @@
 ---
 title: "Introduction to extreme value analysis in R"
 output: html_notebook
-editor_options: 
+editor_options:
   chunk_output_type: console
 ---
 
@@ -15,10 +15,12 @@ Over a five day period, a storm dumped more precipitation in Boulder county than
 The media reported the event as a 1,000 year rain and a 100 year flood. 
 But, what do these values actually mean, and where did they come from?
 
-The goals of this excercise are to: 
+#### Goals
 
-1. Dive into the notion of **exceedance probabilities** and **return intervals**
-2. Provide some hands-on experience with extreme value analysis in R
+This exercise is designed with the following goals in mind:
+
+1. Understand **cumulative distribution functions**, **exceedance probabilities**, and **return intervals**
+2. Get hands-on experience with extreme value analysis in R
 3. Estimate return intervals for the 2013 floods
 
 ### Loading packages
@@ -34,7 +36,6 @@ library(tidyverse)
 library(lubridate)
 library(leaflet)
 library(extRemes)
-library(plotly)
 ```
 
 ## Acquiring flood data
@@ -102,7 +103,7 @@ discharge_data <- discharge_data  %>%
   as_tibble
 ```
 
-Let's take a peek and see what the data look like: 
+Let's see what the data look like: 
 
 ```{r}
 glimpse(discharge_data)
@@ -178,7 +179,7 @@ repeat intervals.
 
 What if we used the empirical data alone to estimate a return interval? 
 All we need is some probability of exceeding a value in one year, right?
-Once we have that probability, we just have to compute its inverse.
+Once we have that probability, we need to compute its inverse.
 How hard could it be?
 
 Let's ask the question: what's the return interval for discharge exceeding
@@ -214,7 +215,7 @@ Now, find the return interval for 4000 cfs using the same approach:
 
 #### A model-based approach
 
-It turns out that we can improve our approch by applying some results from 
+It turns out that we can improve our approach by applying some results from 
 extreme value theory. 
 Specifically, we expect that these annual maxima might be well-represented by 
 a specific probability distribution: the Generalize Extreme Value (GEV) 
@@ -239,9 +240,8 @@ distribution $F$, that has three parameters ($\mu, \sigma, \xi$).
 So you can read $F(x; \mu, \sigma, \xi)$ as the probability of a value 
 less than or equal to $x$ for the distribution $F$, parameterized by all of the 
 things after the colon.
-The squiggly lines are just compact representations of the english words
-'location', 'scale', and 'shape' (designed for backwards compatibility with 
-ancient greek time travelers and optimal student confusion).
+The squiggly lines are compact representations of the English words
+'location', 'scale', and 'shape'.
 
 In order to use the GEV distribution, we need to estimate these three 
 parameters: $\mu, \sigma, \xi$.
@@ -274,19 +274,109 @@ model <- fevd(x = annual_maxima$max_cfs, type = 'GEV')
 
 
 Once your model fits successfully, you can see a summary of the output by 
-printing themodel object.
+printing the model object.
 
 ```{r}
 model
 ```
 
-#### Computing return intervals with our model
+### Understanding our model
+
+Your task is estimate the return interval for the 2013 Boulder flood. 
+To do this, recall that we are defining the return interval as the inverse of the exceedance probability, or 
+
+$$(1 - F(x; \mu, \sigma, \xi))^{-1}$$
+
+Where does this equation come from?
+Recall from our discussion above that the **exceedance probability** is the probability that a random variable exceeds some value, or in mathematical notation $\text{Pr}(X > x)$. 
+The CDF is the probability that a random variable is less than or equal to some value: $\text{Pr}(X \leq x)$. 
+
+If we think about the relationship between these two quantities, we can reason that for any particular value $x$, the probability that a random variable is less than or equal to $x$, OR greater than $x$ must be 1 (there are no other alternatives, the random variable can be less than, equal to, or greater than $x$). 
+Thus, we can reason that:
+
+$$\text{Pr}(X \leq x) + \text{Pr}(X > x) = 1$$
+
+Recognizing that the CDF $F(x) = \text{Pr}(X \leq x)$, and subtracting $F(x)$ from both sides, notice that the exeedance probability is: 
+
+$$\text{Pr}(X > x) = 1 - F(x)$$
+
+Thus, the exceedance probability is the complement of the CDF (or, in English, the exceedance probability is one minus the CDF). 
+
+#### Evaluating the GEV CDF
+
+Your first task will be to use your estimated GEV parameters to compute the CDF at a particular value. 
+There is a function called `pevd` that can evaluate the CDF of the GEV distribution, and the syntax looks like:
+
+```{r}
+pevd(1500, loc = 0, scale = 100, shape = 0, type = 'GEV')
+```
+
+Here I've plugged in arbitrary values for the parameters, but we'd like to use the estimates from our model for the location, scale, and shape parameters. 
+I will pull these parameters out for you into a named vector: 
+
+```{r}
+estimates <- model$results$par
+```
+
+You can extract a specific parameter by name as follows: 
+
+```{r}
+estimates['location']
+estimates['scale']
+estimates['shape']
+```
+
+Evaluate the GEV CDF for the Boulder flood using these estimates, saving the value in an object called `p_2013`. 
+
+```{r}
+# Your code here
+```
+
+#### Computing a return interval from your model
+
+Use the value of `p_2013` to compute an exceedance probability and a return interval for the 2013 Boulder flood. 
+
+```{r}
+# Your code here
+```
+
+How does your estimate compare to the media reports calling the event a "100 year" flood?
+
+As a final check, compute the return interval for 4000 cfs. 
+How does this estimate compare to your previous empirical estimate?
+
+```{r}
+# Your code here
+```
 
 
-### Challenges
+## Challenges
 
-#### Integrate the data from the other sites to improve your estimate
+If you have extra time, take a stab at the following challenges:
+
+### The naming of things
+
+Was the 2013 flood a dragon king, black swan, or perfect storm? 
+Support your argument with quantitative evidence.
+
+<!-- Your text here -->
 
 
-#### Assume it's 2012 and compute the same return interval
+### Pretend the year is 2012
 
+Answer the following questions by adapting the code from above.
+
+1. What's your estimated return interval for 3680 CFS (the discharge seen for the 2013 flood)?
+2. How does this estimate compare to the estimate that we computed above?
+
+```{r}
+# Your code here
+```
+
+
+### Data integration
+
+We have data from two other stream gauges. 
+Can you use these data to improve your estimate of the return interval?
+How would you do this?
+What might be gained with such an approach, and what pitfalls might complicate your approach?
