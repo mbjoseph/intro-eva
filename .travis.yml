@@ -1,0 +1,19 @@
+# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
+
+language: r
+sudo: true
+cache: packages
+sudo: required
+dist: trusty
+
+r_packages: 
+- caTools
+- dataRetrieval
+- extRemes
+- leaflet
+- lubridate
+- tidyverse
+
+script: 
+  - R -f build/render_rmds.R
+
