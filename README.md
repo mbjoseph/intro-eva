@@ -1,6 +1,7 @@
 # Introduction to extreme value analysis in R
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/mbjoseph/intro-eva/master)
+[![Build Status](https://travis-ci.org/mbjoseph/intro-eva.svg?branch=master)](https://travis-ci.org/mbjoseph/intro-eva)
 
 This repo contains interactive R scripts to introduce some key ideas in extreme value analysis, using stream discharge data from Boulder Creek as a case study. 
 
