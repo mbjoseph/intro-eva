@@ -24,3 +24,4 @@ vignettes/*.pdf
 *.knit.md
 .Rproj.user
 intro-eva.Rproj
+.ipynb_checkpoints/*
