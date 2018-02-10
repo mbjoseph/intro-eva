@@ -1,2 +1,6 @@
-install.packages(c('tidyverse', 'dataRetrieval', 'lubridate', 'leaflet', 'extRemes'))
-
+install.packages(c('caTools', 
+                   'dataRetrieval', 
+                   'exTremes', 
+                   'leaflet', 
+                   'lubridate', 
+                   'tidyverse'))
