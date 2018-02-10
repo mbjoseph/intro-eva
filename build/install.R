@@ -1,6 +1,6 @@
 install.packages(c('caTools', 
                    'dataRetrieval', 
-                   'exTremes', 
+                   'extRemes', 
                    'leaflet', 
                    'lubridate', 
                    'tidyverse'))
