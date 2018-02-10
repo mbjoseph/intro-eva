@@ -12,7 +12,7 @@ To get started, click the `launch binder` button above!
 
 Once you connect to your Jupyter session, use the drop down menu to start up a RStudio session: 
 
-![](rstudio-ui.png)
+![](rstudio_ui.png)
 
 ### Opening the activity
 
