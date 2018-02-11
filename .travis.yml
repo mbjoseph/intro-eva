@@ -7,7 +7,7 @@ sudo: required
 dist: trusty
 
 install:
-- Rscript build/install.R
+- Rscript install.R
 
 script: 
 - R -e "rmarkdown::render('activity.Rmd')"
