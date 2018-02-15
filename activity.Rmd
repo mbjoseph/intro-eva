@@ -10,10 +10,14 @@ Over a five day period, a storm dumped more precipitation in Boulder county than
 
 ![This is an animated loop of water vapor systems over the western area of North America on September 12th, 2013 as shown by the GOES-15 and GOES-13 satellites. The storm that caused the 2013 Colorado flooding was kept in a confined area over the Eastern Range of the Rocky Mountains in Colorado by these water vapor systems. Source: http://cimss.ssec.wisc.edu/goes/blog/archives/13876](https://upload.wikimedia.org/wikipedia/commons/9/97/North_American_Water_Vapor_Systems.gif)
 
+
+
 # What is a 100 year flood?
 
 The media reported the event as a 1,000 year rain and a 100 year flood. 
 But, what do these values actually mean, and where did they come from?
+
+
 
 #### Goals
 
@@ -22,6 +26,8 @@ This exercise is designed with the following goals in mind:
 1. Understand **cumulative distribution functions**, **exceedance probabilities**, and **return intervals**
 2. Get hands-on experience with extreme value analysis in R
 3. Estimate return intervals for the 2013 floods
+
+
 
 ### Loading packages
 
@@ -38,10 +44,12 @@ library(leaflet)
 library(extRemes)
 ```
 
+
+
 ## Acquiring flood data
 
 We are going to use the `dataRetrieval` R package to get some stream discharge
-data 
+data. 
 This package is maintained by USGS and openly available on 
 [GitHub](https://github.com/USGS-R/dataRetrieval) to the research community.
 
@@ -74,7 +82,7 @@ leaflet() %>%
 ```
 
 Now, we can use the `readNWISdata` function to fetch stream discharge data at 
-these locations. This function may take a couple of minutes while to run. 
+these locations. This function may take a couple of minutes to run. 
 
 ```{r}
 discharge_data <- readNWISdata(siteNumbers = usgs_sites, 
@@ -83,14 +91,16 @@ discharge_data <- readNWISdata(siteNumbers = usgs_sites,
                                endDate = '2018-01-01')
 ```
 
+
+
 ## Data cleaning
 
-The data are in kind of a raw form - let's clean them up with an eye toward 
+Let's clean the data with an eye toward 
 working with annual maxima. 
 We are going to:
 
 1. Rename columns to be more human readable
-2. Create `year` and `DOY` (day of year) columns from the date field
+2. Create a `year` column from the date field
 3. Filter out suspect observations
 4. Convert the `data.frame` to a `tibble`, which is easier to work with
 
@@ -137,6 +147,8 @@ boulder_creek_mouth <- discharge_data %>%
   filter(site_no == '06730500')
 ```
 
+
+
 ## Computing annual maxima
 
 So, we know that we want to model annual maxima - but first we need to compute 
@@ -158,6 +170,8 @@ Below, generate a plot of maximum discharge at this site through time:
 
 Is there anything that strikes you as unusual about this plot?
 
+
+
 ## Back to the question at hand
 
 Clearly, the maximum flow in 2013 was quite a bit higher than anything seen 
@@ -173,7 +187,11 @@ return interval is the inverse of 0.1 (1 / 0.1 = 10).
 Return intervals are also called return periods, recurrence intervals, and 
 repeat intervals. 
 
+
+
 ### How to find return intervals
+
+
 
 #### A naiive approach
 
@@ -213,6 +231,8 @@ Now, find the return interval for 4000 cfs using the same approach:
 # your code here
 ```
 
+
+
 #### A model-based approach
 
 It turns out that we can improve our approach by applying some results from 
@@ -231,6 +251,8 @@ The cumulative probability density function (CDF) is given by:
 
 $$F(x; \mu, \sigma, \xi) = \begin{cases}\exp(-(1+\xi (x-\mu)/\sigma)^{-1/\xi}) & \xi\neq0 \\ \exp(-\exp(-(x-\mu)/\sigma)) & \xi = 0\end{cases}$$
 
+
+
 #### Wait, what's a CDF and what are all of those squiggly lines?
 
 A cumulative probability density function gives the probability that a random 
@@ -245,6 +267,8 @@ The squiggly lines are compact representations of the English words
 
 In order to use the GEV distribution, we need to estimate these three 
 parameters: $\mu, \sigma, \xi$.
+
+
 
 ### Parameter estimation for the GEV distribution
 
@@ -280,6 +304,8 @@ printing the model object.
 model
 ```
 
+
+
 ### Understanding our model
 
 Your task is estimate the return interval for the 2013 Boulder flood. 
@@ -301,6 +327,8 @@ Recognizing that the CDF $F(x) = \text{Pr}(X \leq x)$, and subtracting $F(x)$ fr
 $$\text{Pr}(X > x) = 1 - F(x)$$
 
 Thus, the exceedance probability is the complement of the CDF (or, in English, the exceedance probability is one minus the CDF). 
+
+
 
 #### Evaluating the GEV CDF
 
@@ -332,6 +360,8 @@ Evaluate the GEV CDF for the Boulder flood using these estimates, saving the val
 # Your code here
 ```
 
+
+
 #### Computing a return interval from your model
 
 Use the value of `p_2013` to compute an exceedance probability and a return interval for the 2013 Boulder flood. 
@@ -350,16 +380,10 @@ How does this estimate compare to your previous empirical estimate?
 ```
 
 
+
 ## Challenges
 
 If you have extra time, take a stab at the following challenges:
-
-### The naming of things
-
-Was the 2013 flood a dragon king, black swan, or perfect storm? 
-Support your argument with quantitative evidence.
-
-<!-- Your text here -->
 
 
 ### Pretend the year is 2012
@@ -372,6 +396,14 @@ Answer the following questions by adapting the code from above.
 ```{r}
 # Your code here
 ```
+
+
+### The naming of things
+
+Was the 2013 flood a dragon king, black swan, or perfect storm? 
+Support your argument with quantitative evidence.
+
+<!-- Your text here -->
 
 
 ### Data integration
