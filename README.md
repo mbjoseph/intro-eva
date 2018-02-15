@@ -1,15 +1,21 @@
 # Introduction to extreme value analysis in R
 
-[![Binder](https://dl.dropboxusercontent.com/s/aqbfp8dkp0iw4k9/launch_Rstudio.svg?dl=0)](https://mybinder.org/v2/gh/mbjoseph/intro-eva/master?urlpath=rstudio)
+
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/mbjoseph/intro-eva/master)
 [![Build Status](https://travis-ci.org/mbjoseph/intro-eva.svg?branch=master)](https://travis-ci.org/mbjoseph/intro-eva)
 
-This repo contains interactive R scripts to introduce some key ideas in 
-extreme value analysis, using stream discharge data from Boulder Creek 
-as a case study. 
+This repo contains interactive R scripts to introduce some key ideas in extreme value analysis, using stream discharge data from Boulder Creek as a case study. 
 
-### Launching RStudio via Binder
+### Launching Binder
 
-To get started, click the `launch RStudio` button above!
+To get started, click the `launch binder` button above!
+
+### Opening RStudio
+
+Once you connect to your Jupyter session, use the drop down menu to start up a RStudio session: 
+
+![](fig/rstudio_ui.png)
+
 
 ### Opening the activity
 
