@@ -1,0 +1,19 @@
+/* remove annoying boxes around images */
+.reveal section img { 
+  background:none; 
+  border:none; 
+  box-shadow:none; 
+}
+
+/* remove annoying auto-capitalization of header text */
+h1 {
+  text-transform: none !important;
+}
+
+h2 {
+  text-transform: none !important;
+}
+
+h3 {
+  text-transform: none !important;
+}

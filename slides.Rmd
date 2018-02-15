@@ -1,0 +1,185 @@
+---
+title: "Basic extreme value analysis"
+author: "Max Joseph"
+date: https://github.com/mbjoseph/intro-eva
+output: 
+  revealjs::revealjs_presentation:
+    reveal_options:
+      slideNumber: true
+    transition: fade
+    css: styles.css
+---
+
+
+```{r, include = FALSE, echo = FALSE}
+library(extRemes)
+library(tidyverse)
+theme_set(theme_minimal() + theme(panel.grid.minor = element_blank()))
+knitr::opts_chunk$set(fig.width = 10, fig.height = 5)
+```
+
+## Classical approaches
+
+1. **Block maxima**
+
+2. **Peaks over threshold**
+
+## Block maxima
+
+Largest in a **block** of observations
+
+```{r, echo = FALSE, message = FALSE, warning=FALSE}
+if (!file.exists('seaice.csv')) {
+read_csv('ftp://sidads.colorado.edu/DATASETS/NOAA/G02135/north/daily/data/N_seaice_extent_daily_v3.0.csv', 
+                   skip = 1) %>%
+  dplyr::filter(YYYY > 1978) %>%
+  write_csv('seaice.csv')
+}
+seaice <- read_csv('seaice.csv')
+
+seaice %>%
+  mutate(date = as.Date(paste(YYYY, MM, DD, sep = '-'))) %>%
+  group_by(YYYY) %>%
+  mutate(`Annual maximum` = `10^6 sq km` == max(`10^6 sq km`)) %>%
+  ggplot(aes(date, `10^6 sq km`, 
+             color = `Annual maximum`, size = `Annual maximum`)) + 
+  geom_point() + 
+  ylab('N hem. sea ice extent: 10^6 km') + 
+  xlab('') + 
+  scale_color_manual(values = c('darkgrey', 'red')) + 
+  scale_size_manual(values = c(.1, 2)) + 
+  theme(legend.position = 'none')
+```
+
+## Peaks over threshold
+
+Distribution over a **threshold**
+
+```{r, echo = FALSE}
+seaice %>%
+  mutate(date = as.Date(paste(YYYY, MM, DD, sep = '-'))) %>%
+  group_by(YYYY) %>%
+  mutate(over_thresh = `10^6 sq km` > 13) %>%
+  ggplot(aes(date, `10^6 sq km`, 
+             color = over_thresh, size = over_thresh)) + 
+  geom_point() + 
+  ylab('N hem. sea ice extent: 10^6 km') + 
+  xlab('') + 
+  scale_color_manual(values = c('darkgrey', 'red')) + 
+  scale_size_manual(values = c(.1, .3)) + 
+  theme(legend.position = 'none')
+```
+
+## Blocks of observations
+
+$$\{X_1, X_2, ..., X_n \}$$
+
+```{r, echo = FALSE}
+seaice %>%
+  mutate(date = as.Date(paste(YYYY, MM, DD, sep = '-'))) %>%
+  group_by(YYYY) %>%
+  mutate(is_block = YYYY == 2000) %>%
+  ggplot(aes(date, `10^6 sq km`, 
+             color = is_block, size = is_block)) + 
+  geom_point() + 
+  ylab('N hem. sea ice extent: 10^6 km') + 
+  xlab('') + 
+  scale_color_manual(values = c('darkgrey', 'dodgerblue')) + 
+  scale_size_manual(values = c(.1, .3)) + 
+  theme(legend.position = 'none')
+```
+
+## Block maxima
+
+$$M_n = \text{max}\{X_1, X_2, ..., X_n \}$$
+
+```{r, echo = FALSE}
+seaice <- seaice %>%
+  mutate(date = as.Date(paste(YYYY, MM, DD, sep = '-'))) %>%
+  group_by(YYYY) %>%
+  mutate(is_block = YYYY == 2000, 
+         is_block_max = is_block &  `10^6 sq km` == max(`10^6 sq km`)) 
+
+seaice %>%
+  ggplot(aes(date, `10^6 sq km`, 
+             color = is_block, size = is_block)) + 
+  geom_point() + 
+  ylab('N hem. sea ice extent: 10^6 km') + 
+  xlab('') + 
+  scale_color_manual(values = c('darkgrey', 'dodgerblue')) + 
+  scale_size_manual(values = c(.1, .2)) + 
+  geom_point(data = dplyr::filter(seaice, is_block_max), 
+             color = 'red', size = 2) + 
+  theme(legend.position = 'none')
+```
+
+## A little bit of theory
+
+![](https://media.giphy.com/media/BmmfETghGOPrW/giphy.gif)
+
+## Extremal types theorem
+
+If $\text{Pr}(M_n \leq z)$ is well-behaved, it belongs to one of 3 families:
+
+```{r, echo = FALSE}
+density_df <- expand.grid(x = seq(-4, 10, .01), 
+                          shape = c(-.5, 0, .5)) %>%
+  mutate(family = case_when(.$shape < 0 ~ 'Weibull', 
+                            .$shape == 0 ~ 'Fréchet', 
+                            .$shape > 0 ~ 'Gumbel'),
+         density = devd(x, shape = shape, type = 'GEV'))
+density_df %>%
+  ggplot(aes(x, density, color = family)) + 
+  geom_line(size = 1.5) + 
+  scale_color_manual(values = c('salmon', 'darkgreen', 'dodgerblue'), 'Family') + 
+  xlab('Block maximum value (z)') + 
+  ylab('Probability density') + 
+  facet_wrap(~family, nrow = 1) + 
+  theme(legend.position = 'none')
+```
+
+
+## Generalized extreme value (GEV) distribution
+
+$$G(z) = \text{exp}\Big\{- \Big[ 1 + \xi \Big( \dfrac{z - \mu}{\sigma} \Big) \Big]^{-1/\xi} \Big\}$$
+
+defined over $\{z: 1 + \xi (z - \mu)/\sigma \gt 0 \}$
+
+
+## GEV parameters
+
+$$G(z) = \text{exp}\Big\{- \Big[ 1 + \xi \Big( \dfrac{z - \mu}{\sigma} \Big) \Big]^{-1/\xi} \Big\}$$
+
+- $\mu:$ location, $-\infty \lt \mu \lt \infty$
+- $\sigma:$ scale, $\sigma \gt 0$
+- $\xi:$ shape, $-\infty \lt \xi \lt \infty$
+
+
+## Moving between families
+
+The **shape** parameter determines the GEV family
+
+- $\xi = 0$: Gumbel
+- $\xi \gt 0$: Fréchet
+- $\xi \lt 0$: Weibull
+
+
+## Conventional applications
+
+**Observe** maxima
+
+**Estimate** GEV parameters
+
+**Infer** probabilities, future extremes, etc.
+
+
+## Today's activity
+
+[![Binder](https://dl.dropboxusercontent.com/s/aqbfp8dkp0iw4k9/launch_Rstudio.svg?dl=0)](https://mybinder.org/v2/gh/mbjoseph/intro-eva/master?urlpath=rstudio)
+
+**Observe** Boulder Creek discharge data
+
+**Estimate** GEV parameters
+
+**Infer** return intervals for 2013 floods
+
