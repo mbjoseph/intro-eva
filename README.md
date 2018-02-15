@@ -19,4 +19,12 @@ Once you connect to your Jupyter session, use the drop down menu to start up a R
 
 Once your RStudio instance is running, open up [`activity.Rmd`](https://github.com/mbjoseph/intro-eva/blob/master/activity.Rmd), which is an [R Notebook](https://rmarkdown.rstudio.com/r_notebooks.html). 
 
+### Viewing the slides
+
+The slides are available here: https://mbjoseph.github.io/intro-eva/slides.html
+
+Source code can be found on the 
+[`gh-pages`](https://github.com/mbjoseph/intro-eva/tree/gh-pages) branch of 
+this repository.
+
 *Huge thanks to the Binder team and others for sorting out the RStudio + Binder integration!* https://github.com/binder-examples/dockerfile-rstudio

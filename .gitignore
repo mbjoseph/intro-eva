@@ -25,3 +25,7 @@ vignettes/*.pdf
 .Rproj.user
 intro-eva.Rproj
 .ipynb_checkpoints/*
+
+# seaice data files
+*seaice*
+
